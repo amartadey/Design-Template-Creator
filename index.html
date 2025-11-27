@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Template Creator</title>
+    <meta name="description" content="Create beautiful presentation templates and export PHP code">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+                    <path d="M8 12h16M8 16h16M8 20h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                            <stop offset="0%" stop-color="#6366f1"/>
+                            <stop offset="100%" stop-color="#8b5cf6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>Template Creator</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="importBtn">
+                    <span class="icon">📥</span> Import Config
+                </button>
+                <button class="btn btn-secondary" id="exportConfigBtn">
+                    <span class="icon">📤</span> Export Config
+                </button>
+                <button class="btn btn-primary" id="generateBtn">
+                    <span class="icon">✨</span> Generate Code
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+        <!-- Sidebar - Configuration -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Project Settings -->
+                <section class="config-section">
+                    <h2 class="section-title">Project Settings</h2>
+                    <div class="form-group">
+                        <label for="siteName">Site Name</label>
+                        <input type="text" id="siteName" placeholder="My Awesome Site" value="My Presentation">
+                    </div>
+                    <div class="form-group">
+                        <label for="baseUrl">Base URL</label>
+                        <input type="text" id="baseUrl" placeholder="https://example.com" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="defaultFont">Font Family</label>
+                        <select id="defaultFont">
+                            <option value="Geist">Geist</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Roboto">Roboto</option>
+                            <option value="Outfit">Outfit</option>
+                            <option value="Poppins">Poppins</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!-- Pages Management -->
+                <section class="config-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Pages</h2>
+                        <button class="btn-icon" id="addPageBtn" title="Add Page">
+                            <span>+</span>
+                        </button>
+                    </div>
+                    <div id="pagesList" class="pages-list">
+                        <!-- Pages will be dynamically added here -->
+                    </div>
+                </section>
+
+                <!-- Menu Configuration -->
+                <section class="config-section">
+                    <h2 class="section-title">Menu Settings</h2>
+                    <div class="form-group">
+                        <label for="menuPosition">Position</label>
+                        <select id="menuPosition">
+                            <option value="fixed">Fixed Top</option>
+                            <option value="sticky">Sticky</option>
+                            <option value="static">Static</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuStyle">Style</label>
+                        <select id="menuStyle">
+                            <option value="pills">Pills (Recommended)</option>
+                            <option value="underline">Underline</option>
+                            <option value="buttons">Buttons</option>
+                        </select>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="autoHideMenu" checked>
+                        <label for="autoHideMenu">Auto-hide on scroll</label>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="backToTop" checked>
+                        <label for="backToTop">Show "Back to Top" button</label>
+                    </div>
+                </section>
+
+                <!-- Style Customization -->
+                <section class="config-section">
+                    <h2 class="section-title">Colors</h2>
+                    <div class="color-grid">
+                        <div class="form-group">
+                            <label for="primaryColor">Primary</label>
+                            <input type="color" id="primaryColor" value="#347419">
+                        </div>
+                        <div class="form-group">
+                            <label for="secondaryColor">Secondary</label>
+                            <input type="color" id="secondaryColor" value="#0dac76">
+                        </div>
+                        <div class="form-group">
+                            <label for="bgColor">Background</label>
+                            <input type="color" id="bgColor" value="#ffffff">
+                        </div>
+                        <div class="form-group">
+                            <label for="textColor">Text</label>
+                            <input type="color" id="textColor" value="#000000">
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </aside>
+
+        <!-- Center - Content Editor -->
+        <section class="content-editor">
+            <div class="editor-header">
+                <h2>Content Editor</h2>
+                <select id="pageSelector" class="page-selector">
+                    <option value="">Select a page to edit</option>
+                </select>
+            </div>
+            <div class="editor-body" id="editorBody">
+                <div class="empty-state">
+                    <div class="empty-icon">📄</div>
+                    <p>Select a page to start editing</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel - Preview & Export -->
+        <aside class="preview-panel">
+            <div class="panel-tabs">
+                <button class="tab-btn active" data-tab="preview">Preview</button>
+                <button class="tab-btn" data-tab="export">Export</button>
+            </div>
+
+            <!-- Preview Tab -->
+            <div class="tab-content active" id="previewTab">
+                <div class="preview-container">
+                    <iframe id="previewFrame" title="Template Preview"></iframe>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div class="tab-content" id="exportTab">
+                <div class="export-controls">
+                    <div class="file-tabs" id="fileTabs">
+                        <!-- File tabs will be dynamically added -->
+                    </div>
+                    <div class="export-actions">
+                        <button class="btn btn-secondary btn-sm" id="copyCodeBtn">
+                            <span class="icon">📋</span> Copy
+                        </button>
+                        <button class="btn btn-primary btn-sm" id="downloadZipBtn">
+                            <span class="icon">📦</span> Download ZIP
+                        </button>
+                    </div>
+                </div>
+                <div class="code-viewer">
+                    <pre><code id="codeDisplay">// Click "Generate Code" to see the output</code></pre>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Add Page Modal -->
+    <div class="modal" id="addPageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Page</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newPageName">Page Name</label>
+                    <input type="text" id="newPageName" placeholder="e.g., About Us">
+                </div>
+                <div class="form-group">
+                    <label for="newPageSlug">Filename (slug)</label>
+                    <input type="text" id="newPageSlug" placeholder="e.g., about">
+                    <small>Will be saved as: filename.php</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelAddPage">Cancel</button>
+                <button class="btn btn-primary" id="confirmAddPage">Add Page</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFileInput" accept=".json" style="display: none;">
+
+    <script src="./script.js"></script>
+</body>
+</html>
