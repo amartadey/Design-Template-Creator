@@ -543,7 +543,7 @@ ${backToTopItem}
     <img src="./<?php echo $imagePath; ?>?<?php echo $cacheBuster; ?>" alt="${page.name}" />
     
     <!-- Purge button for cache refresh -->
-    <a href="?purge=1" class="purge-btn" title="Force cache refresh">🔄 Force Refresh</a>
+    <a href="?purge=1" class="purge-btn" title="Force cache refresh"  style="opacity:0">🔄 Force Refresh</a>
     
     <!-- Debug info -->
     <?php if (isset($_GET['debug'])): ?>
@@ -1211,3 +1211,4 @@ function adjustColor(color, percent) {
         (B < 255 ? B < 1 ? 0 : B : 255))
         .toString(16).slice(1);
 }
+
