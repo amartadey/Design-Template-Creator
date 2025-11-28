@@ -9,9 +9,9 @@ const state = {
         font: 'Geist'
     },
     pages: [
-        { id: 1, name: 'Home', slug: 'index', content: '<img src="./image.jpg" alt="Home" />', title: 'Home', metaDesc: '' },
-        { id: 2, name: 'About', slug: 'about', content: '<h1>About Us</h1><p>Welcome to our presentation.</p>', title: 'About', metaDesc: '' },
-        { id: 3, name: 'Contact', slug: 'contact', content: '<h1>Contact Us</h1><p>Get in touch with us.</p>', title: 'Contact', metaDesc: '' }
+        { id: 1, name: 'Home', slug: 'index', imageName: 'index.jpg', title: 'Home', metaDesc: '' },
+        { id: 2, name: 'About', slug: 'about', imageName: 'about.jpg', title: 'About', metaDesc: '' },
+        { id: 3, name: 'Contact', slug: 'contact', imageName: 'contact.jpg', title: 'Contact', metaDesc: '' }
     ],
     menu: {
         position: 'fixed',
@@ -167,6 +167,23 @@ function attachEventListeners() {
             .replace(/^-|-$/g, '');
         document.getElementById('newPageSlug').value = slug;
     });
+
+    // Mobile menu toggle
+    document.getElementById('menuToggle').addEventListener('click', () => {
+        const sidebar = document.querySelector('.sidebar');
+        sidebar.classList.toggle('open');
+    });
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+        const sidebar = document.querySelector('.sidebar');
+        const menuToggle = document.getElementById('menuToggle');
+        if (sidebar.classList.contains('open') &&
+            !sidebar.contains(e.target) &&
+            !menuToggle.contains(e.target)) {
+            sidebar.classList.remove('open');
+        }
+    });
 }
 
 // ===========================
@@ -232,8 +249,9 @@ function selectPage(pageId) {
                 <input type="text" id="pageMetaDesc" value="${page.metaDesc || ''}" placeholder="Brief description for SEO">
             </div>
             <div class="form-group">
-                <label for="pageContent">HTML Content</label>
-                <textarea id="pageContent" placeholder="Enter your HTML content here...">${page.content}</textarea>
+                <label for="pageImageName">Design Image Filename</label>
+                <input type="text" id="pageImageName" value="${page.imageName || page.slug + '.jpg'}" placeholder="${page.slug}.jpg">
+                <small>Default: ${page.slug}.jpg - The image file should be in the same folder as the PHP files.</small>
             </div>
             <button class="btn btn-primary" onclick="savePage()">Save Changes</button>
         </div>
@@ -252,7 +270,7 @@ function savePage() {
 
     page.title = document.getElementById('pageTitle').value;
     page.metaDesc = document.getElementById('pageMetaDesc').value;
-    page.content = document.getElementById('pageContent').value;
+    page.imageName = document.getElementById('pageImageName').value;
 
     saveState();
     updatePreview();
@@ -296,7 +314,7 @@ function addPage() {
         id: nextPageId++,
         name,
         slug,
-        content: `<h1>${name}</h1>\n<p>Welcome to the ${name} page.</p>`,
+        imageName: `${slug}.jpg`,
         title: name,
         metaDesc: ''
     };
@@ -359,6 +377,16 @@ function generatePreviewHTML(page) {
 
     const backToTopItem = state.menu.backToTop ? '<li><a href="#body" title="Back to Top">↑</a></li>' : '';
 
+    // Use imageName if set, otherwise default to pagename.jpg
+    const imageName = page.imageName || `${page.slug}.jpg`;
+
+    // Check if imageName is a full URL (starts with http:// or https://)
+    const isExternalUrl = imageName.startsWith('http://') || imageName.startsWith('https://');
+    const imageSrc = isExternalUrl ? imageName : `./${imageName}`;
+
+    // Add cache-busting to image
+    const cacheBuster = `v=${Date.now()}&r=${Math.random().toString(36).substr(2, 9)}`;
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -375,7 +403,8 @@ function generatePreviewHTML(page) {
         ${menuItems}
         ${backToTopItem}
     </ul>
-    ${page.content}
+    <img src="${imageSrc}?${cacheBuster}" alt="${page.name}" style="max-width: 100%; height: auto; padding-top: var(--header-height);">
+    <a href="#" class="purge-btn" title="Force cache refresh" onclick="event.preventDefault(); location.reload(true);" style="opacity:0">🔄 Force Refresh</a>
     <script>${generateJS()}</script>
 </body>
 </html>`;
@@ -427,6 +456,9 @@ function generatePHPFile(page) {
 
     const backToTopItem = state.menu.backToTop ? '        <li><a href="#body" title="Back to Top">↑</a></li>' : '';
 
+    // Use imageName if set, otherwise default to pagename.jpg
+    const imageName = page.imageName || `${page.slug}.jpg`;
+
     return `<?php
 // ========================================
 // CLOUDFLARE + CPANEL CACHE BUSTING
@@ -448,12 +480,16 @@ $timestamp = time();
 $microtime = microtime(true);
 $random = mt_rand(100000, 999999);
 
+// Get file modification time
+$imagePath = '${imageName}';
+$fileTime = file_exists($imagePath) ? filemtime($imagePath) : $timestamp;
+
 // 3. CLOUDFLARE TRICK: Add cache purge parameter
 // When you want to force refresh, add ?purge=1 to URL
 $forcePurge = isset($_GET['purge']) ? '&purge=' . $random : '';
 
 // Combine all cache-busting parameters
-$cacheBuster = "v={$timestamp}&t={$microtime}&r={$random}{$forcePurge}";
+$cacheBuster = "v={$timestamp}&t={$microtime}&r={$random}&m={$fileTime}{$forcePurge}";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -473,18 +509,27 @@ $cacheBuster = "v={$timestamp}&t={$microtime}&r={$random}{$forcePurge}";
     <script>
         // JavaScript cache-busting
         window.addEventListener('load', function() {
-            // Prevent bfcache
-            window.addEventListener('pageshow', function(event) {
-                if (event.persisted) {
-                    window.location.reload();
+            var img = document.querySelector('img');
+            if (img) {
+                // Add additional random parameter via JS
+                var currentSrc = img.src;
+                if (currentSrc.indexOf('?') > -1) {
+                    img.src = currentSrc + '&js=' + Date.now();
                 }
-            });
-            
-            // Force hard refresh on manual purge
-            if (window.location.search.indexOf('purge=') > -1) {
-                console.log('🔥 Cache purge mode activated');
             }
         });
+        
+        // Prevent bfcache
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+        
+        // Force hard refresh on manual purge
+        if (window.location.search.indexOf('purge=') > -1) {
+            console.log('🔥 Cache purge mode activated');
+        }
     </script>
 </head>
 
@@ -493,10 +538,76 @@ $cacheBuster = "v={$timestamp}&t={$microtime}&r={$random}{$forcePurge}";
 ${menuItems}
 ${backToTopItem}
     </ul>
-    ${page.content}
+    
+    <!-- Main image with cache-busting -->
+    <img src="./<?php echo $imagePath; ?>?<?php echo $cacheBuster; ?>" alt="${page.name}" />
+    
+    <!-- Purge button for cache refresh -->
+    <a href="?purge=1" class="purge-btn" title="Force cache refresh">🔄 Force Refresh</a>
+    
+    <!-- Debug info -->
+    <?php if (isset($_GET['debug'])): ?>
+    <div style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.9); color: #0f0; padding: 15px; font-family: monospace; font-size: 11px; border-radius: 5px; max-width: 300px; z-index: 10000;">
+        <strong style="color: ${state.colors.primary};">🔍 DEBUG MODE</strong><br><br>
+        <strong>Timestamp:</strong> <?php echo $timestamp; ?><br>
+        <strong>Microtime:</strong> <?php echo $microtime; ?><br>
+        <strong>Random:</strong> <?php echo $random; ?><br>
+        <strong>File Modified:</strong> <?php echo date('Y-m-d H:i:s', $fileTime); ?><br>
+        <strong>Full URL:</strong><br>
+        <div style="word-break: break-all; color: #fff; margin-top: 5px;">
+            <?php echo $imagePath . '?' . $cacheBuster; ?>
+        </div>
+        <hr style="margin: 10px 0; border-color: #333;">
+        <strong style="color: #ff6b6b;">CF Headers Sent:</strong><br>
+        ✓ CF-Cache-Status: BYPASS<br>
+        ✓ Cache-Control: no-store<br>
+        ✓ CDN-Cache-Control: no-store
+    </div>
+    <?php endif; ?>
 
     <!-- JS -->
     <script src="./script.js?<?php echo $cacheBuster; ?>"></script>
+    
+    <!-- 
+    ========================================
+    CLOUDFLARE TIPS:
+    ========================================
+    
+    1. CREATE PAGE RULE in Cloudflare:
+       Pattern: yourdomain.com/path/to/this/folder/*
+       Setting: Cache Level = Bypass
+       
+    2. OR set Cache TTL to very low:
+       Cache Level = Standard
+       Browser Cache TTL = 30 minutes
+       
+    3. MANUAL PURGE via Cloudflare Dashboard:
+       Caching > Configuration > Purge Everything
+       OR Purge by URL (faster)
+       
+    4. API PURGE (advanced):
+       curl -X POST "https://api.cloudflare.com/client/v4/zones/YOUR_ZONE_ID/purge_cache" \\
+       -H "Authorization: Bearer YOUR_API_TOKEN" \\
+       -H "Content-Type: application/json" \\
+       --data '{"files":["https://yourdomain.com/path/${imageName}"]}'
+    
+    5. USE QUERY STRING SORT OFF:
+       In CF Dashboard: Caching > Configuration
+       Enable "Query String Sort" = OFF
+       This makes ?v=1 and ?v=2 treated as different URLs
+       
+    6. DEVELOPMENT MODE:
+       Toggle on in CF Dashboard for 3 hours
+       Bypasses cache temporarily
+       
+    7. USE ?purge=1 in URL:
+       Click the orange button or manually add to URL
+       
+    8. ADD DEBUG MODE:
+       Add ?debug=1 to see all cache-busting info
+       
+    ========================================
+    -->
 </body>
 
 </html>`;
@@ -948,6 +1059,20 @@ function displayFile(filename) {
     document.querySelectorAll('.file-tab').forEach(tab => {
         tab.classList.toggle('active', tab.textContent === filename);
     });
+
+    // Ensure copy and download buttons are always visible and enabled
+    const copyBtn = document.getElementById('copyCodeBtn');
+    const downloadBtn = document.getElementById('downloadZipBtn');
+    if (copyBtn) {
+        copyBtn.style.display = 'inline-flex';
+        copyBtn.style.visibility = 'visible';
+        copyBtn.disabled = false;
+    }
+    if (downloadBtn) {
+        downloadBtn.style.display = 'inline-flex';
+        downloadBtn.style.visibility = 'visible';
+        downloadBtn.disabled = false;
+    }
 }
 
 function copyCurrentCode() {
