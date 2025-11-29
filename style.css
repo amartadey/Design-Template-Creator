@@ -537,10 +537,6 @@ body {
     font-family: var(--font-mono);
 }
 
-font-size: 0.8125rem;
-line-height: 1.6;
-}
-
 .code-viewer code {
     color: #e2e8f0;
 }
@@ -690,6 +686,9 @@ line-height: 1.6;
 
     .app-main {
         grid-template-columns: 1fr;
+        height: auto;
+        min-height: calc(100vh - var(--header-height));
+        display: block;
     }
 
     .sidebar {
@@ -709,6 +708,12 @@ line-height: 1.6;
 
     .content-editor {
         grid-column: 1;
+        height: auto;
+    }
+
+    .editor-body {
+        overflow: visible;
+        height: auto;
     }
 }
 

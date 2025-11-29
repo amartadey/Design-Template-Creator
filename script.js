@@ -17,13 +17,14 @@ const state = {
         position: 'fixed',
         style: 'pills',
         autoHide: true,
-        backToTop: true
+        backToTop: true,
+        fontSize: 12,
+        color: '#666666'
     },
     colors: {
         primary: '#347419',
         secondary: '#0dac76',
-        bg: '#ffffff',
-        text: '#000000'
+        bg: '#ffffff'
     },
     currentPageId: null,
     currentFile: 'index.php'
@@ -59,10 +60,11 @@ function initializeApp() {
             document.getElementById('menuStyle').value = state.menu.style;
             document.getElementById('autoHideMenu').checked = state.menu.autoHide;
             document.getElementById('backToTop').checked = state.menu.backToTop;
+            document.getElementById('menuFontSize').value = state.menu.fontSize;
+            document.getElementById('menuColor').value = state.menu.color;
             document.getElementById('primaryColor').value = state.colors.primary;
             document.getElementById('secondaryColor').value = state.colors.secondary;
             document.getElementById('bgColor').value = state.colors.bg;
-            document.getElementById('textColor').value = state.colors.text;
         } catch (e) {
             console.error('Failed to load saved state:', e);
         }
@@ -92,35 +94,56 @@ function attachEventListeners() {
     document.getElementById('defaultFont').addEventListener('change', (e) => {
         state.project.font = e.target.value;
         saveState();
+        updatePreview();
     });
 
     // Menu settings
     document.getElementById('menuPosition').addEventListener('change', (e) => {
         state.menu.position = e.target.value;
         saveState();
+        updatePreview();
     });
 
     document.getElementById('menuStyle').addEventListener('change', (e) => {
         state.menu.style = e.target.value;
         saveState();
+        updatePreview();
     });
 
     document.getElementById('autoHideMenu').addEventListener('change', (e) => {
         state.menu.autoHide = e.target.checked;
         saveState();
+        updatePreview();
     });
 
     document.getElementById('backToTop').addEventListener('change', (e) => {
         state.menu.backToTop = e.target.checked;
         saveState();
+        updatePreview();
+    });
+
+    // Menu font size
+    document.getElementById('menuFontSize').addEventListener('input', (e) => {
+        state.menu.fontSize = parseInt(e.target.value);
+        document.getElementById('fontSizeValue').textContent = e.target.value + 'px';
+        saveState();
+        updatePreview();
+    });
+
+    // Menu color
+    document.getElementById('menuColor').addEventListener('input', (e) => {
+        state.menu.color = e.target.value;
+        saveState();
+        updatePreview();
     });
 
     // Colors
-    ['primaryColor', 'secondaryColor', 'bgColor', 'textColor'].forEach(id => {
+    ['primaryColor', 'secondaryColor', 'bgColor'].forEach(id => {
         document.getElementById(id).addEventListener('input', (e) => {
             const key = id.replace('Color', '');
             state.colors[key] = e.target.value;
             saveState();
+            updatePreview();
         });
     });
 
@@ -387,6 +410,10 @@ function generatePreviewHTML(page) {
     // Add cache-busting to image
     const cacheBuster = `v=${Date.now()}&r=${Math.random().toString(36).substr(2, 9)}`;
 
+    // Check if single page
+    const isSinglePage = state.pages.length === 1;
+    const bodyClass = isSinglePage ? ' class="single-page"' : '';
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -398,12 +425,17 @@ function generatePreviewHTML(page) {
     <link href="https://fonts.googleapis.com/css2?family=${state.project.font}:wght@100..900&display=swap" rel="stylesheet">
     <style>${generateCSS()}</style>
 </head>
-<body id="body">
+<body id="body"${bodyClass}>
+    ${!isSinglePage ? `<button class="hamburger" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
     <ul id="site-header">
         ${menuItems}
         ${backToTopItem}
-    </ul>
-    <img src="${imageSrc}?${cacheBuster}" alt="${page.name}" style="max-width: 100%; height: auto; padding-top: var(--header-height);">
+    </ul>` : ''}
+    <img src="${imageSrc}?${cacheBuster}" alt="${page.name}" style="max-width: 100%; height: auto; ${isSinglePage ? '' : 'padding-top: var(--header-height);'}">
     <a href="#" class="purge-btn" title="Force cache refresh" onclick="event.preventDefault(); location.reload(true);" style="opacity:0">🔄 Force Refresh</a>
     <script>${generateJS()}</script>
 </body>
@@ -533,14 +565,21 @@ $cacheBuster = "v={$timestamp}&t={$microtime}&r={$random}&m={$fileTime}{$forcePu
     </script>
 </head>
 
-<body id="body">
+<body id="body"<?php echo (count(glob('*.php')) <= 1) ? ' class="single-page"' : ''; ?>>
+    <?php if (count(glob('*.php')) > 1): ?>
+    <button class="hamburger" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
     <ul id="site-header">
 ${menuItems}
 ${backToTopItem}
     </ul>
+    <?php endif; ?>
     
     <!-- Main image with cache-busting -->
-    <img src="./<?php echo $imagePath; ?>?<?php echo $cacheBuster; ?>" alt="${page.name}" />
+    <img src="./<? php echo $imagePath; ?>?<?php echo $cacheBuster; ?>" alt="${page.name}" />
     
     <!-- Purge button for cache refresh -->
     <a href="?purge=1" class="purge-btn" title="Force cache refresh"  style="opacity:0">🔄 Force Refresh</a>
@@ -614,6 +653,75 @@ ${backToTopItem}
 }
 
 function generateCSS() {
+    const menuStyle = state.menu.style;
+    const menuPosition = state.menu.position;
+    const menuFontSize = state.menu.fontSize;
+    const menuColor = state.menu.color;
+
+    // Base styles for menu items based on selected style
+    let menuItemStyles = '';
+
+    if (menuStyle === 'pills') {
+        menuItemStyles = `
+ul li a {
+    text-decoration: none;
+    display: inline-block;
+    font-size: ${menuFontSize}px;
+    letter-spacing: 1px;
+    color: ${menuColor};
+    background-color: ${adjustColor(state.colors.bg, -10)};
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+ul li a:hover {
+    background-color: ${adjustColor(state.colors.bg, -20)};
+    transform: translateY(-2px);
+}`;
+    } else if (menuStyle === 'underline') {
+        menuItemStyles = `
+ul li a {
+    text-decoration: none;
+    display: inline-block;
+    font-size: ${menuFontSize}px;
+    letter-spacing: 1px;
+    color: ${menuColor};
+    background-color: transparent;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+ul li a:hover {
+    border-bottom-color: ${state.colors.primary};
+}`;
+    } else if (menuStyle === 'buttons') {
+        menuItemStyles = `
+ul li a {
+    text-decoration: none;
+    display: inline-block;
+    font-size: ${menuFontSize}px;
+    letter-spacing: 1px;
+    color: ${menuColor};
+    background-color: ${adjustColor(state.colors.bg, -5)};
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid ${adjustColor(state.colors.bg, -20)};
+    transition: all 0.3s ease;
+}
+
+ul li a:hover {
+    background-color: ${adjustColor(state.colors.bg, -15)};
+    border-color: ${state.colors.primary};
+}`;
+    }
+
     return `:root {
     --header-height: 58px;
 }
@@ -630,7 +738,7 @@ html {
     scroll-behavior: smooth;
     scrollbar-width: thin;
     scrollbar-gutter: stable;
-    scrollbar-color: ${state.colors.text} ${state.colors.bg};
+    scrollbar-color: ${menuColor} ${state.colors.bg};
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -638,7 +746,7 @@ html {
 body {
     font-family: "${state.project.font}", sans-serif;
     background-color: ${state.colors.bg};
-    color: ${state.colors.text};
+    color: ${menuColor};
     padding: 0;
     margin: 0;
 }
@@ -647,6 +755,15 @@ img {
     max-width: 100%;
     height: auto;
     padding-top: var(--header-height);
+}
+
+/* Hide navigation when only 1 page */
+body.single-page #site-header {
+    display: none !important;
+}
+
+body.single-page img {
+    padding-top: 0;
 }
 
 ul {
@@ -659,31 +776,17 @@ ul {
     margin: 0;
 }
 
-ul li a {
-    text-decoration: none;
-    display: inline-block;
-    font-size: 12px;
-    letter-spacing: 1px;
-    color: ${state.colors.text};
-    background-color: ${adjustColor(state.colors.bg, -10)};
-    text-transform: uppercase;
-    padding: 5px 12px;
-    border-radius: 50px;
-    transition: background-color 0.3s ease;
-}
-
-ul li a:hover {
-    background-color: ${adjustColor(state.colors.bg, -20)};
-}
+${menuItemStyles}
 
 ul li.active a {
     background-color: ${state.colors.primary};
     background-image: linear-gradient(0deg, ${state.colors.primary}, ${state.colors.secondary});
     color: #fff;
+    border-color: ${state.colors.primary};
 }
 
 #site-header {
-    position: ${state.menu.position};
+    position: ${menuPosition};
     top: 0;
     left: 0;
     width: 100%;
@@ -699,24 +802,79 @@ ul li.active a {
     transform: translateY(-100%);
 }
 
+/* Hamburger Menu */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    padding: 10px;
+    background: none;
+    border: none;
+    z-index: 1001;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background-color: ${menuColor};
+    margin: 3px 0;
+    transition: 0.3s;
+    border-radius: 2px;
+}
+
+.hamburger.active span:nth-child(1) {
+    transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+    transform: rotate(45deg) translate(-5px, -6px);
+}
+
 /* Mobile Optimization */
 @media (max-width: 768px) {
-    #site-header {
+    /* Show hamburger only when there are multiple pages */
+    body:not(.single-page) .hamburger {
+        display: flex;
+        position: absolute;
+        top: 10px;
+        right: 15px;
+    }
+    
+    body:not(.single-page) #site-header {
         padding: 0.75rem 1rem;
     }
     
-    ul {
-        gap: 6px;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+    body:not(.single-page) #site-header {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+        padding: 60px 20px 20px;
+        background: ${state.colors.bg};
+        position: absolute;
+        top: 0;
+        left: 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
-    ul li a {
-        font-size: 10px;
-        padding: 4px 10px;
-        white-space: nowrap;
+    body:not(.single-page) #site-header.mobile-open {
+        display: flex;
+    }
+    
+    body:not(.single-page) #site-header li {
+        width: 100%;
+    }
+    
+    body:not(.single-page) ul li a {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 12px;
+        font-size: ${Math.max(menuFontSize - 1, 10)}px;
     }
 }
 
@@ -725,23 +883,43 @@ ul li.active a {
         padding: 0.5rem 0.75rem;
     }
     
-    ul {
-        gap: 4px;
-    }
-    
     ul li a {
-        font-size: 9px;
+        font-size: ${Math.max(menuFontSize - 2, 9)}px;
         padding: 3px 8px;
     }
-}`;
+}`
+        ;
 }
 
 function generateJS() {
-    if (!state.menu.autoHide) {
-        return '// Menu auto-hide is disabled';
-    }
+    let jsCode = '';
 
-    return `// Auto-hide menu on scroll
+    // Hamburger menu toggle (always include for mobile)
+    jsCode += `// Hamburger menu toggle
+const hamburger = document.querySelector('.hamburger');
+const menu = document.querySelector('#site-header');
+
+if (hamburger && menu) {
+    hamburger.addEventListener('click', function() {
+        this.classList.toggle('active');
+        menu.classList.toggle('mobile-open');
+    });
+    
+    // Close menu when clicking a link
+    const menuLinks = menu.querySelectorAll('a');
+    menuLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            hamburger.classList.remove('active');
+            menu.classList.remove('mobile-open');
+        });
+    });
+}
+
+`;
+
+    // Auto-hide menu on scroll (if enabled)
+    if (state.menu.autoHide) {
+        jsCode += `// Auto-hide menu on scroll
 let lastScrollTop = 0;
 const header = document.getElementById('site-header');
 const scrollThreshold = 100;
@@ -764,6 +942,9 @@ window.addEventListener('scroll', function() {
     
     lastScrollTop = scrollTop;
 });`;
+    }
+
+    return jsCode || '// No JavaScript features enabled';
 }
 
 function generateHTAccess() {
