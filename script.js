@@ -514,6 +514,36 @@ header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 header("CF-Cache-Status: BYPASS");
 header("CDN-Cache-Control: no-store");
 
+// 3. ADDITIONAL USEFUL HEADERS:
+
+// Prevent proxy caching
+header("Surrogate-Control: no-store");
+
+// ETag removal (prevents conditional requests)
+header_remove("ETag");
+header("ETag: " . md5(microtime())); // Or remove entirely
+
+// Vary header (tells caches this varies by headers)
+header("Vary: *");
+
+// Clear site data (nuclear option - use carefully!)
+// header("Clear-Site-Data: \"cache\", \"storage\"");
+
+// X-Accel-Expires for Nginx reverse proxy
+header("X-Accel-Expires: 0");
+
+// Prevent transformation by proxies
+header("Cache-Control: no-transform");
+
+// Cloudflare-specific: bypass edge cache
+header("Cloudflare-CDN-Cache-Control: no-cache");
+
+// Additional browser cache prevention
+header("Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, proxy-revalidate");
+
+// Prevent IE-specific caching
+header("X-UA-Compatible: IE=edge");
+
 // Generate cache-busting parameters
 $timestamp = time();
 $microtime = microtime(true);
@@ -1427,5 +1457,6 @@ function adjustColor(color, percent) {
         (B < 255 ? B < 1 ? 0 : B : 255))
         .toString(16).slice(1);
 }
+
 
 
