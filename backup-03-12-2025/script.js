@@ -52,13 +52,6 @@ function initializeApp() {
             Object.assign(state, savedState);
             nextPageId = Math.max(...state.pages.map(p => p.id)) + 1;
 
-            // Ensure all required properties exist with defaults
-            if (!state.menu.color) state.menu.color = '#666666';
-            if (!state.menu.fontSize) state.menu.fontSize = 12;
-            if (!state.colors.primary) state.colors.primary = '#347419';
-            if (!state.colors.secondary) state.colors.secondary = '#0dac76';
-            if (!state.colors.bg) state.colors.bg = '#ffffff';
-
             // Update form values
             document.getElementById('siteName').value = state.project.siteName;
             document.getElementById('baseUrl').value = state.project.baseUrl;
@@ -1241,35 +1234,7 @@ function displayFile(filename) {
     state.currentFile = filename;
     const code = state.generatedFiles[filename];
 
-    // Determine language based on file extension
-    let language = 'plaintext'; // default
-    if (filename.endsWith('.php')) {
-        language = 'php';
-    } else if (filename.endsWith('.css')) {
-        language = 'css';
-    } else if (filename.endsWith('.js')) {
-        language = 'javascript';
-    } else if (filename.endsWith('.htaccess')) {
-        language = 'apache';
-    }
-
-    // Get the code element
-    const codeElement = document.getElementById('codeDisplay');
-
-    // Set the code content
-    codeElement.textContent = code;
-
-    // Remove any existing language classes and highlighting
-    codeElement.className = '';
-    codeElement.removeAttribute('data-highlighted');
-
-    // Apply Highlight.js highlighting
-    if (typeof hljs !== 'undefined') {
-        // Set the language class
-        codeElement.className = `language-${language}`;
-        // Highlight the element
-        hljs.highlightElement(codeElement);
-    }
+    document.getElementById('codeDisplay').textContent = code;
 
     // Update active tab
     document.querySelectorAll('.file-tab').forEach(tab => {

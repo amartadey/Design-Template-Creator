@@ -637,10 +637,6 @@ body {
     border-top: 1px solid var(--border);
 }
 
-.code-viewer {
-    overflow-x: auto;
-}
-
 /* Responsive Design */
 @media (max-width: 1400px) {
     :root {
