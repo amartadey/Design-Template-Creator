@@ -9,9 +9,9 @@ const state = {
         font: 'Geist'
     },
     pages: [
-        { id: 1, name: 'Home', slug: 'index', imageName: 'index.jpg', imageData: null, originalExtension: null, title: 'Home', metaDesc: '' },
-        { id: 2, name: 'About', slug: 'about', imageName: 'about.jpg', imageData: null, originalExtension: null, title: 'About', metaDesc: '' },
-        { id: 3, name: 'Contact', slug: 'contact', imageName: 'contact.jpg', imageData: null, originalExtension: null, title: 'Contact', metaDesc: '' }
+        { id: 1, name: 'Home', slug: 'index', imageName: 'index.jpg', title: 'Home', metaDesc: '' },
+        { id: 2, name: 'About', slug: 'about', imageName: 'about.jpg', title: 'About', metaDesc: '' },
+        { id: 3, name: 'Contact', slug: 'contact', imageName: 'contact.jpg', title: 'Contact', metaDesc: '' }
     ],
     menu: {
         position: 'fixed',
@@ -44,8 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeApp() {
-    // DISABLED: localStorage persistence - uncomment to re-enable state saving across page reloads
-    /*
     // Load from localStorage if available
     const saved = localStorage.getItem('templateCreatorState');
     if (saved) {
@@ -78,12 +76,10 @@ function initializeApp() {
             console.error('Failed to load saved state:', e);
         }
     }
-    */
 }
 
 function saveState() {
-    // DISABLED: localStorage persistence - uncomment to re-enable state saving
-    // localStorage.setItem('templateCreatorState', JSON.stringify(state));
+    localStorage.setItem('templateCreatorState', JSON.stringify(state));
 }
 
 // ===========================
@@ -235,10 +231,6 @@ function renderPages() {
             pageItem.classList.add('active');
         }
 
-        // Make draggable
-        pageItem.setAttribute('draggable', 'true');
-        pageItem.dataset.pageId = page.id;
-
         pageItem.innerHTML = `
             <div class="page-info">
                 <div class="page-name">${page.name}</div>
@@ -249,13 +241,6 @@ function renderPages() {
                 <button class="delete-btn" onclick="deletePage(${page.id})" title="Delete">🗑️</button>
             </div>
         `;
-
-        // Add drag event listeners
-        pageItem.addEventListener('dragstart', handleDragStart);
-        pageItem.addEventListener('dragover', handleDragOver);
-        pageItem.addEventListener('drop', handleDrop);
-        pageItem.addEventListener('dragend', handleDragEnd);
-        pageItem.addEventListener('dragleave', handleDragLeave);
 
         pagesList.appendChild(pageItem);
     });
@@ -294,232 +279,18 @@ function selectPage(pageId) {
                 <input type="text" id="pageMetaDesc" value="${page.metaDesc || ''}" placeholder="Brief description for SEO">
             </div>
             <div class="form-group">
-                <label for="pageImageUpload">Upload Design Image</label>
-                <input type="file" id="pageImageUpload" accept="image/*" class="file-input">
-                <div id="imagePreview" class="image-preview-container" style="display: ${page.imageData ? 'flex' : 'none'};">
-                    ${page.imageData ? `
-                        <a href="${page.imageData}" data-fancybox="gallery" data-caption="${page.name} - ${page.imageName}">
-                            <img src="${page.imageData}" alt="Preview" class="preview-image">
-                        </a>
-                        <button type="button" class="clear-image-btn" onclick="clearImage(${page.id})">✕</button>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="form-group">
                 <label for="pageImageName">Design Image Filename</label>
                 <input type="text" id="pageImageName" value="${page.imageName || page.slug + '.jpg'}" placeholder="${page.slug}.jpg">
-                <small>The image will be saved with this filename in the ZIP file.</small>
-                <div id="extensionWarning" class="extension-warning" style="display: none;"></div>
+                <small>Default: ${page.slug}.jpg - The image file should be in the same folder as the PHP files.</small>
             </div>
             <button class="btn btn-primary" onclick="savePage()">Save Changes</button>
         </div>
     `;
 
-    // Attach event listeners after DOM is updated
-    const fileInput = document.getElementById('pageImageUpload');
-    const filenameInput = document.getElementById('pageImageName');
-
-    if (fileInput) {
-        fileInput.addEventListener('change', (e) => handleImageUpload(pageId, e.target.files[0]));
-    }
-
-    if (filenameInput) {
-        filenameInput.addEventListener('input', (e) => handleFilenameChange(pageId, e.target.value));
-    }
-
     renderPages();
     updatePageSelector();
     updatePreview();
 }
-
-// ===========================
-// IMAGE UPLOAD HANDLERS
-// ===========================
-
-function handleImageUpload(pageId, file) {
-    if (!file) return;
-
-    const page = state.pages.find(p => p.id === pageId);
-    if (!page) return;
-
-    // Validate file is an image
-    if (!file.type.startsWith('image/')) {
-        alert('Please upload a valid image file (jpg, png, gif, webp, etc.)');
-        return;
-    }
-
-    // Extract original extension
-    const originalFilename = file.name;
-    const extensionMatch = originalFilename.match(/\.([^.]+)$/);
-    const extension = extensionMatch ? extensionMatch[1].toLowerCase() : 'jpg';
-
-    // Auto-populate filename field
-    const filenameInput = document.getElementById('pageImageName');
-    if (filenameInput) {
-        filenameInput.value = originalFilename;
-        page.imageName = originalFilename;
-    }
-
-    // Store original extension
-    page.originalExtension = extension;
-
-    // Read file and convert to base64
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        page.imageData = e.target.result;
-
-        // Update preview
-        const previewContainer = document.getElementById('imagePreview');
-        if (previewContainer) {
-            previewContainer.style.display = 'flex';
-            previewContainer.innerHTML = `
-                <a href="${page.imageData}" data-fancybox="gallery" data-caption="${page.name} - ${page.imageName}">
-                    <img src="${page.imageData}" alt="Preview" class="preview-image">
-                </a>
-                <button type="button" class="clear-image-btn" onclick="clearImage(${pageId})">✕ Clear</button>
-            `;
-        }
-
-        // Clear any extension warning since we just uploaded
-        const warningDiv = document.getElementById('extensionWarning');
-        if (warningDiv) {
-            warningDiv.style.display = 'none';
-        }
-
-        saveState();
-        updatePreview();
-    };
-
-    reader.readAsDataURL(file);
-}
-
-function handleFilenameChange(pageId, newFilename) {
-    const page = state.pages.find(p => p.id === pageId);
-    if (!page) return;
-
-    page.imageName = newFilename;
-
-    // Check extension mismatch if image is uploaded
-    if (page.imageData && page.originalExtension) {
-        const newExtensionMatch = newFilename.match(/\.([^.]+)$/);
-        const newExtension = newExtensionMatch ? newExtensionMatch[1].toLowerCase() : '';
-
-        const warningDiv = document.getElementById('extensionWarning');
-        if (warningDiv) {
-            if (newExtension && newExtension !== page.originalExtension) {
-                warningDiv.innerHTML = `⚠️ Warning: Uploaded image is .${page.originalExtension} but filename is .${newExtension}. The file will be saved as .${newExtension} in the ZIP.`;
-                warningDiv.style.display = 'block';
-            } else if (!newExtension) {
-                warningDiv.innerHTML = `⚠️ Warning: Filename is missing an extension. Please add .${page.originalExtension} or another image extension.`;
-                warningDiv.style.display = 'block';
-            } else {
-                warningDiv.style.display = 'none';
-            }
-        }
-    }
-
-    saveState();
-}
-
-function clearImage(pageId) {
-    const page = state.pages.find(p => p.id === pageId);
-    if (!page) return;
-
-    page.imageData = null;
-    page.originalExtension = null;
-
-    // Update preview
-    const previewContainer = document.getElementById('imagePreview');
-    if (previewContainer) {
-        previewContainer.style.display = 'none';
-        previewContainer.innerHTML = '';
-    }
-
-    // Clear file input
-    const fileInput = document.getElementById('pageImageUpload');
-    if (fileInput) {
-        fileInput.value = '';
-    }
-
-    // Clear warning
-    const warningDiv = document.getElementById('extensionWarning');
-    if (warningDiv) {
-        warningDiv.style.display = 'none';
-    }
-
-    saveState();
-    updatePreview();
-}
-
-// ===========================
-// DRAG AND DROP HANDLERS
-// ===========================
-
-let draggedPageId = null;
-
-function handleDragStart(e) {
-    draggedPageId = parseInt(e.currentTarget.dataset.pageId);
-    e.currentTarget.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-
-    const targetItem = e.currentTarget;
-    if (!targetItem.classList.contains('dragging')) {
-        targetItem.classList.add('drag-over');
-    }
-}
-
-function handleDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const targetPageId = parseInt(e.currentTarget.dataset.pageId);
-    e.currentTarget.classList.remove('drag-over');
-
-    if (draggedPageId !== targetPageId) {
-        reorderPages(draggedPageId, targetPageId);
-    }
-}
-
-function handleDragEnd(e) {
-    e.currentTarget.classList.remove('dragging');
-
-    // Remove all drag-over classes
-    document.querySelectorAll('.page-item').forEach(item => {
-        item.classList.remove('drag-over');
-    });
-}
-
-function reorderPages(draggedId, targetId) {
-    const draggedIndex = state.pages.findIndex(p => p.id === draggedId);
-    const targetIndex = state.pages.findIndex(p => p.id === targetId);
-
-    if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Remove dragged page from array
-    const [draggedPage] = state.pages.splice(draggedIndex, 1);
-
-    // Insert at new position
-    state.pages.splice(targetIndex, 0, draggedPage);
-
-    // Save and update UI
-    saveState();
-    renderPages();
-    updatePageSelector();
-    updatePreview();
-}
-
-// ===========================
-// PAGE MANAGEMENT (continued)
-// ===========================
 
 function savePage() {
     if (!state.currentPageId) return;
@@ -574,8 +345,6 @@ function addPage() {
         name,
         slug,
         imageName: `${slug}.jpg`,
-        imageData: null,
-        originalExtension: null,
         title: name,
         metaDesc: ''
     };
@@ -638,21 +407,15 @@ function generatePreviewHTML(page) {
 
     const backToTopItem = state.menu.backToTop ? '<li><a href="#body" title="Back to Top">↑</a></li>' : '';
 
-    // Use imageData if available, otherwise use imageName
-    let imageSrc;
-    let useDataUrl = false;
-    if (page.imageData) {
-        imageSrc = page.imageData;
-        useDataUrl = true;
-    } else {
-        const imageName = page.imageName || `${page.slug}.jpg`;
-        const isExternalUrl = imageName.startsWith('http://') || imageName.startsWith('https://');
-        imageSrc = isExternalUrl ? imageName : `./${imageName}`;
-    }
+    // Use imageName if set, otherwise default to pagename.jpg
+    const imageName = page.imageName || `${page.slug}.jpg`;
 
-    // Add cache-busting to image (but NOT for data URLs)
+    // Check if imageName is a full URL (starts with http:// or https://)
+    const isExternalUrl = imageName.startsWith('http://') || imageName.startsWith('https://');
+    const imageSrc = isExternalUrl ? imageName : `./${imageName}`;
+
+    // Add cache-busting to image
     const cacheBuster = `v=${Date.now()}&r=${Math.random().toString(36).substr(2, 9)}`;
-    const finalImageSrc = useDataUrl ? imageSrc : `${imageSrc}?${cacheBuster}`;
 
     // Check if single page
     const isSinglePage = state.pages.length === 1;
@@ -679,7 +442,7 @@ function generatePreviewHTML(page) {
         ${menuItems}
         ${backToTopItem}
     </ul>` : ''}
-    <img src="${finalImageSrc}" alt="${page.name}" style="max-width: 100%; height: auto; ${isSinglePage ? '' : 'padding-top: var(--header-height);'}">
+    <img src="${imageSrc}?${cacheBuster}" alt="${page.name}" style="max-width: 100%; height: auto; ${isSinglePage ? '' : 'padding-top: var(--header-height);'}">
     <a href="#" class="purge-btn" title="Force cache refresh" onclick="event.preventDefault(); location.reload(true);" style="opacity:0">🔄 Force Refresh</a>
     <script>${generateJS()}</script>
 </body>
@@ -1582,24 +1345,8 @@ async function downloadZip() {
 
     const zip = new JSZip();
 
-    // Add generated code files
     Object.entries(state.generatedFiles).forEach(([filename, content]) => {
         zip.file(filename, content);
-    });
-
-    // Add uploaded images
-    state.pages.forEach(page => {
-        if (page.imageData) {
-            // Convert base64 to binary blob
-            const base64Data = page.imageData.split(',')[1];
-            const binaryData = atob(base64Data);
-            const bytes = new Uint8Array(binaryData.length);
-            for (let i = 0; i < binaryData.length; i++) {
-                bytes[i] = binaryData.charCodeAt(i);
-            }
-            // Use the current imageName (which may have been changed by user)
-            zip.file(page.imageName, bytes);
-        }
     });
 
     zip.generateAsync({ type: 'blob' }).then(blob => {
