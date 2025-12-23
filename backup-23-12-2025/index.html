@@ -15,7 +15,6 @@
     <!-- Fancybox4 for image popup -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
     <link rel="stylesheet" href="./image-upload-styles.css">
-    <link rel="stylesheet" href="./bulk-upload-styles.css">
     <link rel="stylesheet" href="./style.css">
 </head>
 
@@ -43,9 +42,6 @@
                 </button>
                 <button class="btn btn-secondary" id="exportConfigBtn">
                     <span class="icon">📤</span> Export Config
-                </button>
-                <button class="btn btn-secondary" id="bulkUploadBtn">
-                    <span class="icon">📤</span> Bulk Upload
                 </button>
                 <button class="btn btn-primary" id="generateBtn">
                     <span class="icon">✨</span> Generate Code
@@ -242,37 +238,6 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="cancelAddPage">Cancel</button>
                 <button class="btn btn-primary" id="confirmAddPage">Add Page</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Upload Modal -->
-    <div class="modal" id="bulkUploadModal">
-        <div class="modal-content bulk-upload-modal-content">
-            <div class="modal-header">
-                <h3>📤 Bulk Upload Images</h3>
-                <button class="modal-close" id="closeBulkUploadModal">&times;</button>
-            </div>
-            <div class="modal-body bulk-upload-body">
-                <div class="bulk-upload-zone" id="bulkUploadZone">
-                    <div class="upload-icon">📁</div>
-                    <h3>Drag & Drop Images Here</h3>
-                    <p>or click to select multiple images</p>
-                    <input type="file" id="bulkImageInput" accept="image/*" multiple style="display: none;">
-                    <button class="btn btn-secondary" id="selectImagesBtn">
-                        <span class="icon">🖼️</span> Select Images
-                    </button>
-                </div>
-                <div class="bulk-preview-grid" id="bulkPreviewGrid" style="display: none;">
-                    <h4>Selected Images (<span id="imageCount">0</span>)</h4>
-                    <div class="preview-items" id="previewItems"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelBulkUpload">Cancel</button>
-                <button class="btn btn-primary" id="confirmBulkUpload" style="display: none;">
-                    <span class="icon">✓</span> Create Pages
-                </button>
             </div>
         </div>
     </div>

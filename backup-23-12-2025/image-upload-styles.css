@@ -1,0 +1,113 @@
+/* Image Upload Styles */
+.file-input {
+    width: 100%;
+    padding: 0.625rem;
+    font-size: 0.875rem;
+    border: 2px dashed var(--border-dark);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.file-input:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+#imagePreview {
+    margin-top: var(--spacing-sm);
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+}
+
+img.preview-image {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
+#imagePreview .clear-image-btn {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: bold;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-md);
+}
+
+.clear-image-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+.extension-warning {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-md);
+    color: #92400e;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+/* Drag and Drop Styles */
+.page-item {
+    position: relative;
+}
+
+.page-item[draggable="true"] {
+    cursor: grab;
+}
+
+.page-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.page-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.page-item.drag-over {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.15);
+    transform: translateY(-2px);
+}
+
+.page-item::before {
+    content: '⋮⋮';
+    position: absolute;
+    left: var(--spacing-xs);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-size: 1rem;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.page-item:hover::before {
+    opacity: 1;
+}
+
+.page-info {
+    margin-left: var(--spacing-md);
+}
