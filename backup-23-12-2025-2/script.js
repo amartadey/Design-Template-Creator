@@ -8,7 +8,11 @@ const state = {
         baseUrl: '',
         font: 'Geist'
     },
-    pages: [],
+    pages: [
+        { id: 1, name: 'Home', slug: 'index', imageName: 'index.jpg', imageData: null, originalExtension: null, title: 'Home', metaDesc: '' },
+        { id: 2, name: 'About', slug: 'about', imageName: 'about.jpg', imageData: null, originalExtension: null, title: 'About', metaDesc: '' },
+        { id: 3, name: 'Contact', slug: 'contact', imageName: 'contact.jpg', imageData: null, originalExtension: null, title: 'Contact', metaDesc: '' }
+    ],
     menu: {
         position: 'fixed',
         style: 'pills',
@@ -26,7 +30,7 @@ const state = {
     currentFile: 'index.php'
 };
 
-let nextPageId = 1;
+let nextPageId = 4;
 
 // ===========================
 // INITIALIZATION
@@ -234,9 +238,6 @@ function attachEventListeners() {
     bulkUploadZone.addEventListener('dragover', handleBulkDragOver);
     bulkUploadZone.addEventListener('dragleave', handleBulkDragLeave);
     bulkUploadZone.addEventListener('drop', handleBulkDrop);
-
-    // Fullscreen preview button
-    document.getElementById('fullscreenBtn').addEventListener('click', openFullscreenPreview);
 }
 
 // ===========================
@@ -260,7 +261,7 @@ function renderPages() {
 
         pageItem.innerHTML = `
             <div class="page-info">
-                <div class="page-name">${page.isHomepage ? '🏠 ' : ''}${page.name}</div>
+                <div class="page-name">${page.name}</div>
                 <div class="page-slug">${page.slug}.php</div>
             </div>
             <div class="page-actions">
@@ -307,11 +308,6 @@ function selectPage(pageId) {
             <div class="form-group">
                 <label for="pageTitle">Page Title</label>
                 <input type="text" id="pageTitle" value="${page.title || page.name}" placeholder="Page Title">
-                <small>Changing this will update the page name and URL slug</small>
-            </div>
-            <div class="form-group checkbox-group">
-                <input type="checkbox" id="isHomepage" ${page.isHomepage ? 'checked' : ''}>
-                <label for="isHomepage">Set as Homepage (index.php)</label>
             </div>
             <div class="form-group">
                 <label for="pageMetaDesc">Meta Description</label>
@@ -340,63 +336,8 @@ function selectPage(pageId) {
     `;
 
     // Attach event listeners after DOM is updated
-    const pageTitleInput = document.getElementById('pageTitle');
-    const isHomepageCheckbox = document.getElementById('isHomepage');
     const fileInput = document.getElementById('pageImageUpload');
     const filenameInput = document.getElementById('pageImageName');
-
-    // Page title change handler - updates name and slug
-    if (pageTitleInput) {
-        pageTitleInput.addEventListener('input', (e) => {
-            const newTitle = e.target.value.trim();
-            if (newTitle) {
-                page.title = newTitle;
-                page.name = newTitle;
-
-                // Update slug only if not homepage
-                if (!page.isHomepage) {
-                    const newSlug = newTitle.toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-|-$/g, '');
-                    page.slug = newSlug || page.slug;
-                }
-
-                renderPages();
-                updatePageSelector();
-            }
-        });
-    }
-
-    // Homepage checkbox handler
-    if (isHomepageCheckbox) {
-        isHomepageCheckbox.addEventListener('change', (e) => {
-            const wasHomepage = page.isHomepage;
-
-            if (e.target.checked) {
-                // Unset other pages as homepage
-                state.pages.forEach(p => {
-                    if (p.id !== pageId) {
-                        p.isHomepage = false;
-                    }
-                });
-                page.isHomepage = true;
-                page.slug = 'index';
-            } else {
-                page.isHomepage = false;
-                // Regenerate slug from name if unchecking homepage
-                if (wasHomepage) {
-                    const newSlug = page.name.toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-|-$/g, '');
-                    page.slug = newSlug || 'page';
-                }
-            }
-
-            renderPages();
-            updatePageSelector();
-            saveState();
-        });
-    }
 
     if (fileInput) {
         fileInput.addEventListener('change', (e) => handleImageUpload(pageId, e.target.files[0]));
@@ -656,8 +597,7 @@ function addPage() {
         imageData: null,
         originalExtension: null,
         title: name,
-        metaDesc: '',
-        isHomepage: false
+        metaDesc: ''
     };
 
     state.pages.push(newPage);
@@ -762,130 +702,6 @@ function generatePreviewHTML(page) {
     <img src="${finalImageSrc}" alt="${page.name}" style="max-width: 100%; height: auto; ${isSinglePage ? '' : 'padding-top: var(--header-height);'}">
     <a href="#" class="purge-btn" title="Force cache refresh" onclick="event.preventDefault(); location.reload(true);" style="opacity:0">🔄 Force Refresh</a>
     <script>${generateJS()}</script>
-</body>
-</html>`;
-}
-
-function openFullscreenPreview() {
-    if (state.pages.length === 0) {
-        alert('Please add at least one page before opening fullscreen preview.');
-        return;
-    }
-
-    // Create a new window for fullscreen preview
-    const previewWindow = window.open('', '_blank', 'width=1920,height=1080');
-
-    if (!previewWindow) {
-        alert('Please allow popups for this site to use fullscreen preview.');
-        return;
-    }
-
-    // Generate HTML for all pages with navigation
-    const fullscreenHTML = generateFullscreenHTML();
-
-    previewWindow.document.open();
-    previewWindow.document.write(fullscreenHTML);
-    previewWindow.document.close();
-
-    // Request fullscreen after a short delay
-    setTimeout(() => {
-        if (previewWindow.document.documentElement.requestFullscreen) {
-            previewWindow.document.documentElement.requestFullscreen().catch(err => {
-                console.log('Fullscreen request failed:', err);
-            });
-        }
-    }, 100);
-}
-
-function generateFullscreenHTML() {
-    // Generate all page contents
-    const pagesHTML = state.pages.map((page, index) => {
-        const menuItems = state.pages.map(p => {
-            const isActive = p.id === page.id;
-            return `<li${isActive ? ' class="active"' : ''}><a href="#" data-page-id="${p.id}">${p.name}</a></li>`;
-        }).join('\n        ');
-
-        const backToTopItem = state.menu.backToTop ? '<li><a href="#body" title="Back to Top">↑</a></li>' : '';
-
-        let imageSrc;
-        if (page.imageData) {
-            imageSrc = page.imageData;
-        } else {
-            const imageName = page.imageName || `${page.slug}.jpg`;
-            const isExternalUrl = imageName.startsWith('http://') || imageName.startsWith('https://');
-            imageSrc = isExternalUrl ? imageName : `./${imageName}`;
-        }
-
-        const isSinglePage = state.pages.length === 1;
-        const displayStyle = index === 0 ? 'block' : 'none';
-
-        return `
-    <div class="page-content" id="page-${page.id}" style="display: ${displayStyle};">
-        ${!isSinglePage ? `<button class="hamburger" aria-label="Toggle menu">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-        <ul id="site-header">
-            ${menuItems}
-            ${backToTopItem}
-        </ul>` : ''}
-        <img src="${imageSrc}" alt="${page.name}" style="max-width: 100%; height: auto; ${isSinglePage ? '' : 'padding-top: var(--header-height);'}">
-    </div>`;
-    }).join('\n');
-
-    const isSinglePage = state.pages.length === 1;
-    const bodyClass = isSinglePage ? ' class="single-page"' : '';
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${state.project.siteName} - Fullscreen Preview</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=${state.project.font}:wght@100..900&display=swap" rel="stylesheet">
-    <style>${generateCSS()}</style>
-</head>
-<body id="body"${bodyClass}>
-    ${pagesHTML}
-    <script>
-        ${generateJS()}
-        
-        // Add page navigation functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const pageLinks = document.querySelectorAll('#site-header a[data-page-id]');
-            const pages = document.querySelectorAll('.page-content');
-            
-            pageLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const pageId = this.getAttribute('data-page-id');
-                    
-                    // Hide all pages
-                    pages.forEach(page => {
-                        page.style.display = 'none';
-                    });
-                    
-                    // Show selected page
-                    const targetPage = document.getElementById('page-' + pageId);
-                    if (targetPage) {
-                        targetPage.style.display = 'block';
-                    }
-                    
-                    // Update active state in all menus
-                    document.querySelectorAll('#site-header li').forEach(li => {
-                        li.classList.remove('active');
-                    });
-                    this.parentElement.classList.add('active');
-                    
-                    // Scroll to top
-                    window.scrollTo(0, 0);
-                });
-            });
-        });
-    </script>
 </body>
 </html>`;
 }

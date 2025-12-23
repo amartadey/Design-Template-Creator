@@ -462,11 +462,6 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
-.fullscreen-btn {
-    margin-left: auto;
-    font-size: 1.125rem;
-}
-
 .tab-btn {
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
